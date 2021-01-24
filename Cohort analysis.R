@@ -1,26 +1,25 @@
-
+rm(list = ls()); gc();
 library(reshape2)
 library(extrafont)
 font_import()
 loadfonts(device = "win")
-#cohort analysis
+#cohort analysis - Retention Table
 cohort.sum <- data %>%                         
   group_by(`User ID`) %>%                      
-  mutate(first = min(Month)) %>%                
+  mutate(first = min(Month)) %>%      #define first purchasing month as cohort          
   group_by(first, Month) %>%                    
-  summarise(users = n_distinct(`User ID`)) %>% 
+  summarise(users = n_distinct(`User ID`)) %>%  #number of users in that cohort
   spread(Month, users)                         
 
-
-
-cohort.chart <- melt(cohort.sum, id.vars = "first") %>% arrange(first)
+cohort.chart <- melt(cohort.sum, id.vars = "first") %>% arrange(first) 
 colnames(cohort.chart) <- c('cohort', 'month', 'users')
 cohort.chart[is.na(cohort.chart)] = 0
 
 blues <- colorRampPalette(c("blue", "green"))
 cohort.chart$cohort = as.factor((cohort.chart$cohort))
-cohort.chart$cohort <- factor(cohort.chart$cohort, levels = rev(levels(cohort.chart$cohort)))
+cohort.chart$cohort <- factor(cohort.chart$cohort, levels = rev(levels(cohort.chart$cohort))) # arrange group in reverse order for desired outputs
 
+#plot layer cake 
 ggplot(cohort.chart, aes(x=month, y=users, group=cohort))+
   geom_area(aes(fill = cohort)) +
   scale_fill_manual(values = blues(nrow(cohort.sum))) +
@@ -29,7 +28,7 @@ ggplot(cohort.chart, aes(x=month, y=users, group=cohort))+
   scale_x_discrete(expand = c(0.03, 0.03))+
   theme_bw()+
   theme(text=element_text(size=10,  family="Segoe Print"))
-#============================#
+#==process data for retention table=======#
 shiftrow <- function(v) {
   # put a vector in, strip off leading NA values, and place that amount at the end
   first_na_index <- min( which(!is.na(v)) )
@@ -72,11 +71,7 @@ plotdata <- data.frame(
 plotdata[which(plotdata$percentage == 1), "percentage"] <- 0
 
 
-
-# library(showtext)
-# font_add_google("Montserrat", "Montserrat")
-# font_add_google("Roboto", "Roboto")
-
+# plot retention table
 ggplot(plotdata, aes(x = cohort_age, y = reorder(cohort, desc(cohort)))) +
   geom_raster(aes(fill = percentage)) +
   scale_fill_continuous(guide = FALSE) + # no legend
